@@ -2,117 +2,236 @@
 
 A native SwiftUI iOS app for the **Shuttle and Scales** badminton club. Connects to the same Firebase Firestore backend as the [web app](https://badminton-cost-manager.web.app/), providing real-time court booking management, cost splitting, and payment tracking on mobile.
 
+## Screenshots
+
+- Splash Screen → Member Dashboard → Admin Panel
+
 ## Features
 
-- **Member View** (default) — Read-only dashboard with monthly summary, calendar, player list, shuttle tracker, finances, and payment status
-- **Admin View** (login required) — Full editing: toggle court bookings, record payments, add expenses, update rates, manage shuttle usage
-- **Real-time Sync** — Live Firestore listener; changes from web or mobile appear instantly on both
-- **Admin Authentication** — Verifies credentials against Firestore `users` collection (same as web)
-- **Dark Theme** — Modern glassmorphism UI with court layout background
+### Member View (Read-Only)
+- Monthly summary cards (days booked, per-player cost, court total, grand total)
+- Court booking calendar (Monday-first grid with booked day indicators)
+- Player list (main & standby with color-coded pills)
+- Shuttle tracker (tins, used, remaining with progress bar)
+- Financial overview (collected vs expenses vs balance)
+- Payment status list (per-member with due/paid/outstanding/credit)
+
+### Admin View (After Login)
+- Edit court rate, tin cost, tins count, courier charges
+- Interactive calendar — tap days to toggle bookings
+- Record payments — member dropdown picker, amount, date
+- Record expenses — type selector (court/shuttle/misc), amount, shop
+- Shuttle usage tracker — tap days to mark shuttle use
+- Manage players — view main & standby rosters
+
+### General
+- **Splash Screen** — Animated logo reveal with court background
+- **Real-time Sync** — Live Firestore listener; changes from web or mobile appear instantly
+- **Admin Authentication** — Verifies credentials against Firestore `users` collection
+- **Dark Theme** — Glassmorphism UI with subtle badminton court background
+- **Smooth Animations** — Scale, fade, and transition effects throughout
 
 ## Tech Stack
 
-| Technology | Purpose |
-|---|---|
-| SwiftUI | Declarative UI framework |
-| Swift 5.0 | Language |
-| Firebase iOS SDK 11.x | Firestore real-time database |
-| Xcode 26.6+ | IDE & build tool |
-| iOS 17.0+ | Minimum deployment target |
+| Technology | Version | Purpose |
+|---|---|---|
+| Swift | 5.0 | Programming language |
+| SwiftUI | 5.0+ | Declarative UI framework |
+| Xcode | 26.6+ | IDE & build system |
+| iOS | 17.0+ | Minimum deployment target |
+| Firebase iOS SDK | 11.x | Backend services |
+| Cloud Firestore | via Firebase | Real-time NoSQL database |
+| Swift Package Manager | Built-in | Dependency management |
+
+## Architecture
+
+| Layer | Pattern | Details |
+|---|---|---|
+| UI | SwiftUI Views | Declarative, composable view hierarchy |
+| State Management | `@Observable` + `@Environment` | Modern SwiftUI observation (iOS 17+) |
+| Data Flow | Unidirectional | Store → Views (read), Views → Store actions (write) |
+| Networking | Firebase Firestore SDK | Real-time `addSnapshotListener` |
+| Theme | Centralized `AppTheme` | Color tokens, design system |
+| Components | Reusable SwiftUI Views | GlassCard, StatCard, PillView, etc. |
 
 ## Project Structure
 
 ```
 Badminton Manager/
-├── Badminton_ManagerApp.swift       # App entry — FirebaseApp.configure()
-├── ContentView.swift                # Root navigator (member ↔ admin)
-├── GoogleService-Info.plist         # Firebase config (not committed)
-├── State/
-│   ├── AppState.swift               # Login state (@Observable)
-│   └── BadmintonDataStore.swift     # ViewModel — live Firestore data
-├── Services/
-│   └── FirestoreService.swift       # Firestore subscribe, save, auth
+├── Badminton_ManagerApp.swift          # App entry — FirebaseApp.configure()
+├── ContentView.swift                   # Root navigator (member ↔ admin)
+├── GoogleService-Info.plist            # Firebase config (gitignored)
+│
 ├── Views/
-│   ├── MemberDashboardView.swift    # Read-only member dashboard
-│   ├── AdminDashboardView.swift     # Admin panel with editing
-│   ├── LoginView.swift              # Admin login screen
-│   └── CourtBackgroundView.swift    # Court layout background
+│   ├── SplashScreenView.swift          # Animated splash screen
+│   ├── MemberDashboardView.swift       # Read-only member dashboard
+│   ├── AdminDashboardView.swift        # Admin panel with editing
+│   ├── LoginView.swift                 # Admin login screen
+│   └── CourtBackgroundView.swift       # Court layout Canvas background
+│
+├── State/
+│   ├── AppState.swift                  # Login state (@Observable)
+│   └── BadmintonDataStore.swift        # ViewModel — live Firestore data & business logic
+│
+├── Services/
+│   └── FirestoreService.swift          # Firestore CRUD, real-time listener, auth
+│
 ├── Components/
-│   ├── GlassCard.swift              # Glass card container
-│   ├── CardHeader.swift             # Section header
-│   ├── StatCard.swift               # Summary stat card
-│   ├── PillView.swift               # Player name pill
-│   ├── StatViews.swift              # ShuttleStatView, FinanceStatView
-│   ├── PaymentItemView.swift        # Payment list item
-│   └── MiniCalendarView.swift       # Calendar grid
+│   ├── GlassCard.swift                 # Semi-transparent card container
+│   ├── CardHeader.swift                # Icon + title section header
+│   ├── StatCard.swift                  # Summary stat card (icon, value, label)
+│   ├── PillView.swift                  # Player name capsule
+│   ├── StatViews.swift                 # ShuttleStatView, FinanceStatView
+│   ├── PaymentItemView.swift           # Payment row (avatar, amount, status badge)
+│   └── MiniCalendarView.swift          # Calendar grid with booked day indicators
+│
 ├── Models/
-│   └── Models.swift                 # All data models
+│   └── Models.swift                    # BadmintonDocument, MonthData, PaymentEntry, etc.
+│
 ├── Theme/
-│   └── AppTheme.swift               # Color tokens
-└── Utilities/
-    ├── Helpers.swift                 # formatMoney()
-    └── FlowLayout.swift             # Custom flow layout
+│   └── AppTheme.swift                  # Color palette & design tokens
+│
+├── Utilities/
+│   ├── Helpers.swift                   # formatMoney()
+│   └── FlowLayout.swift               # Custom SwiftUI Layout for pills/tags
+│
+└── Assets.xcassets/
+    ├── AppIcon.appiconset/             # App icon
+    ├── SplashLogo.imageset/            # Club logo for splash screen
+    └── AccentColor.colorset/           # System accent color
+```
+
+## Firestore Data Structure
+
+The app reads/writes the exact same document as the web app:
+
+```
+Collection: "badminton"
+  Document: "data"
+    │
+    ├── _members
+    │   ├── main: ["Sajev", "Arun", "Kavith", ...]
+    │   ├── standby: ["Dinesh", "Pradeep"]
+    │   ├── enrolled: { "Sajev": "2025-01", ... }
+    │   └── left: { "OldPlayer": "2026-03" }
+    │
+    ├── credits
+    │   └── "2026-07": { "Sajev": 200.0, "Arun": 0, ... }
+    │
+    └── months
+        └── "2026-07"
+            ├── selectedDays: [1, 3, 5, 7, ...]
+            ├── hourlyRate: 800
+            ├── tinCount: 3
+            ├── tinCost: 4500
+            ├── courierCharges: 0
+            ├── extraShuttles: 0
+            ├── monthlyStandby: []
+            ├── shuttleDays: [1, 3, 5, ...]
+            ├── payments: [{ member, amount, dateISO, ts }]
+            ├── expenses: [{ type, amount, shop, date, courierCharges }]
+            └── miscExpenses: [{ desc, amount }]
+```
+
+### Authentication
+
+Admin credentials are stored in a separate Firestore collection:
+
+```
+Collection: "users"
+  Document: { username: "admin", password: "..." }
 ```
 
 ## Prerequisites
 
-- Xcode 26.6 or later
+- macOS with Xcode 26.6 or later
 - iOS 17.0+ device or simulator
-- Firebase project with Firestore enabled (same project as the web app)
+- Firebase project with Firestore enabled
+- iOS app registered in Firebase Console
 
 ## Setup
 
 1. **Clone the repo**
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/SajevLucksman/badminton-manager-mobile-ios-swift.git
    cd badminton-manager-mobile-ios-swift
    ```
 
 2. **Register iOS app in Firebase Console**
-   - Go to [Firebase Console](https://console.firebase.google.com/) → your project → Project Settings → Add app → iOS
+   - Go to [Firebase Console](https://console.firebase.google.com/) → Project Settings → Add app → iOS
    - Bundle ID: `com.badminton.manager.mobile.Badminton-Manager`
    - Download the generated `GoogleService-Info.plist`
 
 3. **Add the plist to the project**
-   - Place `GoogleService-Info.plist` in:
-     ```
-     Badminton Manager/Badminton Manager/GoogleService-Info.plist
-     ```
+   ```
+   Badminton Manager/Badminton Manager/GoogleService-Info.plist
+   ```
 
 4. **Open in Xcode**
    ```bash
    open "Badminton Manager/Badminton Manager.xcodeproj"
    ```
-   Xcode will automatically resolve the Firebase iOS SDK package.
+   Xcode will automatically resolve the Firebase iOS SDK via Swift Package Manager.
 
-5. **Build & Run**
-   - Select an iOS 17+ simulator or device
-   - `Cmd+R` to build and run
-
-## Firestore Data Structure
-
-The app reads/writes the same document as the web app:
-
-```
-Collection: badminton
-  Document: data
-    ├── _members: { main: [...], standby: [...], enrolled: {...}, left: {...} }
-    ├── credits: { "2026-07": { "Player": 200.0 } }
-    └── months: { "2026-07": { selectedDays, tinCount, hourlyRate, tinCost, payments, expenses, shuttleDays, ... } }
-```
+5. **Build & Run** — `Cmd+R`
 
 ## App Flow
 
-1. App launches → **Member View** (read-only dashboard)
-2. Tap **Admin** button → Login sheet slides up
-3. Enter credentials (verified against Firestore `users` collection)
-4. On success → **Admin Dashboard** with full editing
-5. Tap **Logout** → back to Member View
+```
+┌─────────────┐     2 sec      ┌──────────────────┐
+│   Splash    │ ──────────────→ │  Member View     │
+│   Screen    │                 │  (read-only)     │
+└─────────────┘                 └────────┬─────────┘
+                                         │ Tap "Admin"
+                                         ▼
+                                ┌──────────────────┐
+                                │   Login Sheet    │
+                                │  (username/pass) │
+                                └────────┬─────────┘
+                                         │ Success
+                                         ▼
+                                ┌──────────────────┐
+                                │   Admin View     │
+                                │  (full editing)  │
+                                └────────┬─────────┘
+                                         │ Logout
+                                         ▼
+                                ┌──────────────────┐
+                                │  Member View     │
+                                └──────────────────┘
+```
+
+## Key Design Decisions
+
+| Decision | Rationale |
+|---|---|
+| `@Observable` over `ObservableObject` | Modern iOS 17+ API, less boilerplate, better performance |
+| Single Firestore document | Matches existing web app structure; atomic reads/writes |
+| Canvas for court background | GPU-accelerated drawing, no image assets needed |
+| Glassmorphism cards | Modern iOS aesthetic, separates content from background |
+| No navigation stack in admin | Single scrollable screen avoids deep navigation on mobile |
+| Picker for member selection | Prevents typos, faster than typing on mobile |
+
+## Dependencies
+
+| Package | Source | Version |
+|---|---|---|
+| Firebase iOS SDK | `https://github.com/firebase/firebase-ios-sdk` | 11.0.0+ |
+| — FirebaseCore | Included | Firebase initialization |
+| — FirebaseFirestore | Included | Real-time database |
+
+## Scripts / Build Commands
+
+| Action | Command |
+|---|---|
+| Open project | `open "Badminton Manager/Badminton Manager.xcodeproj"` |
+| Build (CLI) | `xcodebuild -project "Badminton Manager/Badminton Manager.xcodeproj" -scheme "Badminton Manager" -destination 'platform=iOS Simulator,name=iPhone 16' build` |
+| Clean build | `xcodebuild clean` |
 
 ## Related
 
-- [Web App](https://badminton-cost-manager.web.app/) — React + Vite + Firebase Hosting
-- Same Firestore backend — real-time sync between web and mobile
+- **Web App** — [badminton-cost-manager.web.app](https://badminton-cost-manager.web.app/) (React + Vite + Firebase Hosting)
+- **Same Backend** — Both apps read/write the same Firestore document in real-time
 
 ## License
 
