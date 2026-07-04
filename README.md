@@ -101,47 +101,6 @@ Badminton Manager/
     └── AccentColor.colorset/           # System accent color
 ```
 
-## Firestore Data Structure
-
-The app reads/writes the exact same document as the web app:
-
-```
-Collection: "badminton"
-  Document: "data"
-    │
-    ├── _members
-    │   ├── main: ["Sajev", "Arun", "Kavith", ...]
-    │   ├── standby: ["Dinesh", "Pradeep"]
-    │   ├── enrolled: { "Sajev": "2025-01", ... }
-    │   └── left: { "OldPlayer": "2026-03" }
-    │
-    ├── credits
-    │   └── "2026-07": { "Sajev": 200.0, "Arun": 0, ... }
-    │
-    └── months
-        └── "2026-07"
-            ├── selectedDays: [1, 3, 5, 7, ...]
-            ├── hourlyRate: 800
-            ├── tinCount: 3
-            ├── tinCost: 4500
-            ├── courierCharges: 0
-            ├── extraShuttles: 0
-            ├── monthlyStandby: []
-            ├── shuttleDays: [1, 3, 5, ...]
-            ├── payments: [{ member, amount, dateISO, ts }]
-            ├── expenses: [{ type, amount, shop, date, courierCharges }]
-            └── miscExpenses: [{ desc, amount }]
-```
-
-### Authentication
-
-Admin credentials are stored in a separate Firestore collection:
-
-```
-Collection: "users"
-  Document: { username: "admin", password: "..." }
-```
-
 ## Prerequisites
 
 - macOS with Xcode 26.6 or later
