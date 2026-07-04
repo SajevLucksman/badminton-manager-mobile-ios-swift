@@ -16,7 +16,7 @@ struct Badminton_ManagerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashScreenView()
         }
     }
 }

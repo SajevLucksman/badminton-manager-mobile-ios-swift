@@ -66,74 +66,55 @@ struct AdminDashboardView: View {
     // MARK: - Admin Header
 
     private var adminHeaderSection: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "shield.lefthalf.filled")
-                .font(.system(size: 40, weight: .light))
-                .foregroundStyle(
-                    .linearGradient(colors: [AppTheme.warning, AppTheme.danger], startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .shadow(color: AppTheme.warning.opacity(0.4), radius: 8)
-
-            Text("Admin Panel")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(AppTheme.textPrimary)
-
-            Text("Harmony Smashes")
-                .font(.subheadline)
-                .foregroundStyle(AppTheme.textSecondary)
-
-            // Month Nav
-            HStack(spacing: 20) {
-                Button(action: { store.goToPreviousMonth() }) {
-                    Image(systemName: "chevron.left.circle.fill")
+        VStack(spacing: 12) {
+            // Top bar: Logout + Title + Member View
+            HStack {
+                Button(action: { appState.logout() }) {
+                    Image(systemName: "arrow.left.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(AppTheme.warning)
+                        .foregroundStyle(AppTheme.danger)
+                }
+
+                Spacer()
+
+                Text("Admin")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AppTheme.textPrimary)
+
+                Spacer()
+
+                Button(action: { appState.logout() }) {
+                    Image(systemName: "eye.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(AppTheme.accentSecondary)
+                }
+            }
+
+            // Month Navigation
+            HStack(spacing: 16) {
+                Button(action: { store.goToPreviousMonth() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(AppTheme.accent)
                 }
 
                 Text(store.selectedMonthDisplay)
-                    .font(.headline.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(AppTheme.textPrimary)
-                    .frame(minWidth: 130)
 
                 Button(action: { store.goToNextMonth() }) {
-                    Image(systemName: "chevron.right.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(AppTheme.warning)
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(AppTheme.accent)
                 }
             }
-            .padding(.top, 6)
-
-            // Action buttons
-            HStack(spacing: 12) {
-                Button(action: { appState.logout() }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.caption2)
-                        Text("Logout")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .foregroundStyle(AppTheme.danger)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Capsule().fill(AppTheme.danger.opacity(0.12)))
-                }
-
-                Button(action: { appState.logout() }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "eye.fill")
-                            .font(.caption2)
-                        Text("Member View")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .foregroundStyle(AppTheme.accentSecondary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Capsule().fill(AppTheme.accentSecondary.opacity(0.12)))
-                }
-            }
-            .padding(.top, 4)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.05))
+            )
         }
-        .padding(.bottom, 4)
     }
 
     // MARK: - Rates Section
@@ -229,11 +210,20 @@ struct AdminDashboardView: View {
                 CardHeader(icon: "plus.circle.fill", title: "Record Payment")
 
                 VStack(spacing: 10) {
+                    // Member picker dropdown
                     HStack(spacing: 10) {
                         Image(systemName: "person.fill").foregroundStyle(AppTheme.textMuted).frame(width: 20)
-                        TextField("Member name", text: $payMember)
-                            .foregroundStyle(AppTheme.textPrimary)
-                            .textInputAutocapitalization(.words)
+                        Picker("Select member", selection: $payMember) {
+                            Text("Select member").tag("")
+                            ForEach(store.players.main, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
+                            ForEach(store.players.standby, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
+                        }
+                        .tint(AppTheme.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(12)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Color.white.opacity(0.05)).overlay(RoundedRectangle(cornerRadius: 10).stroke(AppTheme.cardBorder)))
